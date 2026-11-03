@@ -1,0 +1,2960 @@
+# TEST-NET — Product Requirements Document (PRD) & Sequential Development Playbook
+
+
+
+MVP Specification
+
+10 Development Phases
+
+
+
+Dokumen ini menjadi pedoman utama pengembangan test-net, website pengujian kecepatan dan kualitas koneksi internet seperti Ookla Speedtest.
+
+Pengembangan dilakukan secara bertahap menggunakan AI Coding Assistant / Vibe Coding di VS Code. Setiap phase harus diselesaikan, diuji, direview, dan mendapatkan persetujuan sebelum melanjutkan ke phase berikutnya.
+
+## Informasi Project
+
+| Item              | Detail                                        |
+| ----------------- | --------------------------------------------- |
+| Project           | test-net                                      |
+| Platform          | Public Web Application                        |
+| Target pengguna   | Publik                                        |
+| Development       | Solo Developer                                |
+| Pendekatan        | MVP First                                     |
+| Frontend          | Next.js App Router                            |
+| Language          | TypeScript                                    |
+| Styling           | Tailwind CSS                                  |
+| UI                | shadcn/ui                                     |
+| State Management  | React State / Zustand jika diperlukan         |
+| HTTP Client       | Native Fetch / Axios jika diperlukan          |
+| Speed Test Engine | LibreSpeed                                    |
+| Database          | Tidak diperlukan untuk MVP                    |
+| Deployment        | Next.js Hosting + Dedicated Speed Test Server |
+
+### Keputusan arsitektur utama
+
+Next.js + Dedicated Speed Test Server
+
+User Browser
+
+UI dan pengukuran melalui browser
+
+Next.js Application
+
+UI, routing, konfigurasi, metadata
+
+LibreSpeed Dedicated Server
+
+Ping, download, upload, throughput measurement
+
+Alasan pemisahan:
+
+- Next.js tidak dirancang menjadi data plane untuk transfer data speed test berukuran besar.
+- Dedicated server dapat mengelola bandwidth, concurrency, dan payload secara lebih terkontrol.
+- Infrastruktur speed test dapat dikembangkan menjadi multi-server.
+- UI dan engine dapat dikembangkan secara terpisah.
+
+LibreSpeed menjadi pilihan utama, tetapi versi, lisensi, API, dan metode integrasinya wajib divalidasi pada Phase 2 sebelum implementasi.
+
+# PART A — PRODUCT REQUIREMENTS DOCUMENT
+
+## 1. Product Information
+
+Nama produk: test-net
+
+Deskripsi:
+
+Website publik untuk mengukur kualitas koneksi internet secara langsung melalui browser. Pengguna dapat mengetahui download speed, upload speed, ping, dan jitter tanpa membuat akun.
+
+Target pengguna:
+
+- Pengguna internet rumahan.
+- Pekerja remote.
+- Pelajar dan mahasiswa.
+- Pengguna yang ingin memeriksa kualitas jaringan.
+- Pengguna teknis yang membutuhkan informasi latency dan jitter.
+
+Project constraints:
+
+- Solo developer.
+- Tidak menggunakan microservices yang tidak diperlukan.
+- Tidak menggunakan database pada MVP.
+- Tidak ada authentication.
+- Tidak ada payment atau subscription.
+- Tidak menggunakan Rust atau Tauri.
+- Tidak menggunakan Next.js API untuk transfer payload speed test.
+- Tidak mengimplementasikan fitur P2 sebelum MVP selesai.
+
+## 2. Product Overview
+
+### Problem
+
+Pengguna internet sering mengalami perbedaan antara kecepatan internet yang dijanjikan provider dengan kecepatan aktual yang mereka rasakan.
+
+Mereka membutuhkan alat sederhana untuk mengetahui kondisi koneksi saat ini.
+
+### Solution
+
+test-net menyediakan pengujian koneksi internet berbasis transfer data aktual antara browser pengguna dan dedicated test server.
+
+### Cara kerja
+
+1. Pengguna membuka website.
+2. Website memuat konfigurasi test server.
+3. Pengguna menekan tombol Start.
+4. Sistem melakukan pengukuran latency.
+5. Sistem mengukur jitter.
+6. Sistem melakukan download test.
+7. Sistem melakukan upload test.
+8. Sistem menampilkan hasil pengukuran.
+9. Pengguna dapat mengulangi tes.
+
+### Nilai utama
+
+- Tidak membutuhkan akun.
+- Mudah digunakan.
+- Pengukuran aktual.
+- Tampilan sederhana.
+- Mendukung desktop dan mobile.
+- Dapat dikembangkan menjadi layanan multi-server.
+
+## 3. Product Goals
+
+| Tujuan               | Indikator keberhasilan                 |
+| -------------------- | -------------------------------------- |
+| Pengukuran internet  | Download dan upload aktual berhasil    |
+| Network diagnostics  | Ping dan jitter tersedia               |
+| Kemudahan penggunaan | Tes dapat dimulai dengan satu tindakan |
+| Responsive           | Dapat digunakan di mobile dan desktop  |
+| Reliability          | Error dan cancellation ditangani       |
+| Maintainability      | Engine terpisah dari UI                |
+| Production readiness | Deployment HTTPS dan dedicated server  |
+
+## 4. Target Users
+
+| User               | Kebutuhan                            |
+| ------------------ | ------------------------------------ |
+| Home Internet User | Memeriksa kecepatan internet         |
+| Remote Worker      | Menilai kestabilan koneksi           |
+| Student            | Memeriksa koneksi untuk pembelajaran |
+| Technical User     | Melihat latency dan jitter           |
+| Mobile User        | Menjalankan tes melalui smartphone   |
+
+## 5. Scope & Feature Priorities
+
+### P0 — Core MVP
+
+Wajib
+
+| Fitur                | Deskripsi                         |
+| -------------------- | --------------------------------- |
+| Speed Test Dashboard | Halaman utama pengujian           |
+| Download Test        | Mengukur kecepatan download       |
+| Upload Test          | Mengukur kecepatan upload         |
+| Ping Test            | Mengukur latency                  |
+| Jitter Test          | Mengukur variasi latency          |
+| Test Progress        | Menampilkan proses pengujian      |
+| Result Display       | Menampilkan hasil                 |
+| Start / Restart      | Memulai dan mengulangi tes        |
+| Cancel Test          | Menghentikan tes                  |
+| Data Usage           | Estimasi penggunaan data          |
+| Server Information   | Menampilkan server yang digunakan |
+| Error Handling       | Menangani kegagalan pengukuran    |
+| Responsive UI        | Mendukung desktop dan mobile      |
+
+### P1 — Supporting Features
+
+- Local test history.
+- Share test result.
+- Server information detail.
+- FAQ.
+- About / Methodology.
+- Privacy policy.
+- SEO metadata.
+- Multi-language.
+
+### P2 — Future Development
+
+- Multi-server selection.
+- Automatic nearest server.
+- Server location map.
+- User account.
+- Cloud history.
+- Global leaderboard.
+- Network diagnostics tambahan.
+- ISP comparison.
+- Public API.
+
+### Out of Scope MVP
+
+- Authentication.
+- Subscription.
+- Payment.
+- Database.
+- Admin dashboard.
+- Analytics kompleks.
+- Mobile native application.
+- Packet-level diagnostics.
+- ISP ranking.
+
+## 6. Functional Requirements
+
+| ID    | Requirement    | Acceptance Criteria                       |
+| ----- | -------------- | ----------------------------------------- |
+| FR-01 | Load Homepage  | Halaman utama dapat dibuka                |
+| FR-02 | Start Test     | Pengguna dapat memulai tes                |
+| FR-03 | Ping Test      | Sistem memperoleh beberapa sampel latency |
+| FR-04 | Jitter Test    | Sistem menghitung variasi latency         |
+| FR-05 | Download Test  | Mengukur transfer data aktual             |
+| FR-06 | Upload Test    | Mengukur upload aktual                    |
+| FR-07 | Progress       | Menampilkan tahap tes yang benar          |
+| FR-08 | Result         | Menampilkan empat metrik inti             |
+| FR-09 | Cancel         | Pengguna dapat menghentikan tes           |
+| FR-10 | Restart        | Tes dapat diulang                         |
+| FR-11 | Data Usage     | Menampilkan estimasi penggunaan data      |
+| FR-12 | Error Handling | Error server dan koneksi ditangani        |
+
+### Definisi pengukuran
+
+Download
+
+Mengukur jumlah byte yang diterima browser dibagi durasi pengukuran.
+
+Upload
+
+Mengukur jumlah byte yang dikirim browser dibagi durasi pengukuran, mengikuti metodologi engine.
+
+Ping
+
+Menggunakan HTTP round-trip latency ke server, bukan ICMP ping. Ini harus dijelaskan dalam dokumentasi metodologi.
+
+Jitter
+
+Menggunakan rata-rata selisih absolut antara sampel latency berurutan, kecuali engine terpilih memiliki definisi lain yang diputuskan dan didokumentasikan.
+
+Satuan:
+
+- Download: Mbps.
+- Upload: Mbps.
+- Ping: ms.
+- Jitter: ms.
+
+## 7. Non-Functional Requirements
+
+| Aspek           | Requirement                                |
+| --------------- | ------------------------------------------ |
+| Performance     | UI ringan dan responsif                    |
+| Security        | HTTPS, CORS allowlist, rate limiting       |
+| Reliability     | Timeout dan cancellation                   |
+| Scalability     | Dedicated test server                      |
+| Maintainability | Modular TypeScript                         |
+| Accessibility   | Keyboard navigation dan kontras            |
+| Compatibility   | Chrome, Firefox, Edge, Safari modern       |
+| Privacy         | Tidak menyimpan data pribadi pada MVP      |
+| SEO             | Metadata dan halaman publik dapat diindeks |
+
+## 8. Application Structure & Navigation
+
+### Routes
+
+| Route      | Fungsi                     | Prioritas |
+| ---------- | -------------------------- | --------- |
+| `/`        | Speed Test                 | P0        |
+| `/about`   | Informasi produk           | P1        |
+| `/faq`     | Frequently Asked Questions | P1        |
+| `/privacy` | Privacy Policy             | P1        |
+
+### Main Layout
+
+- Navbar.
+- Hero / Intro.
+- Speed Test Panel.
+- Metric Results.
+- Server Information.
+- Data Usage Notice.
+- Footer.
+
+### Reusable Components
+
+- AppHeader.
+- AppFooter.
+- SpeedTestPanel.
+- MetricCard.
+- TestProgress.
+- TestStatus.
+- ServerInfo.
+- DataUsageNotice.
+- ErrorMessage.
+
+## 9. User Flow
+
+\#chatgpt-mermaid-\_r_mm\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_mm\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_mm\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_mm\_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-\_r_mm\_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_mm\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_mm\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_mm\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_mm\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_mm\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_mm\_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_mm\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_mm\_ p{margin:0;}#chatgpt-mermaid-\_r_mm\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_mm\_ .label text,#chatgpt-mermaid-\_r_mm\_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ .node rect,#chatgpt-mermaid-\_r_mm\_ .node circle,#chatgpt-mermaid-\_r_mm\_ .node ellipse,#chatgpt-mermaid-\_r_mm\_ .node polygon,#chatgpt-mermaid-\_r_mm\_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ .rough-node .label text,#chatgpt-mermaid-\_r_mm\_ .node .label text,#chatgpt-mermaid-\_r_mm\_ .image-shape .label,#chatgpt-mermaid-\_r_mm\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_mm\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ .rough-node .label,#chatgpt-mermaid-\_r_mm\_ .node .label,#chatgpt-mermaid-\_r_mm\_ .image-shape .label,#chatgpt-mermaid-\_r_mm\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_mm\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_mm\_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_mm\_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_mm\_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-\_r_mm\_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_mm\_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_mm\_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_mm\_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-\_r_mm\_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_mm\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_mm\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_mm\_ .icon-shape,#chatgpt-mermaid-\_r_mm\_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_mm\_ .icon-shape p,#chatgpt-mermaid-\_r_mm\_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-\_r_mm\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_mm\_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_mm\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_mm\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_mm\_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_mm\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_mm\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_mm\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_mm\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_mm\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_mm\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_mm\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(0, 79, 153);}#chatgpt-mermaid-\_r_mm\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(0, 79, 153);}#chatgpt-mermaid-\_r_mm\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_mm\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_mm\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(245, 250, 255);stroke:rgb(206, 219, 229);stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ .node rect,#chatgpt-mermaid-\_r_mm\_ .node circle,#chatgpt-mermaid-\_r_mm\_ .node ellipse,#chatgpt-mermaid-\_r_mm\_ .node polygon,#chatgpt-mermaid-\_r_mm\_ .node path{fill:rgb(229, 243, 255);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_mm\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_mm\_ .mermaid-decision .label-container{fill:rgb(245, 250, 255);stroke:rgb(206, 219, 229);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_mm\_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_mm\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_mm\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}Open WebsiteLoad Test Server ConfigServer Ready?Show Server ErrorDisplay Start ButtonStart TestMeasure PingCalculate JitterDownload TestUpload TestDisplay ResultsRepeat Test?FinishCancel TestCancelled StateNoYesYesNo
+
+## 10. UI/UX Requirements
+
+### Design Principles
+
+- Modern dan minimalis.
+- Fokus pada angka hasil pengujian.
+- Satu CTA utama.
+- Responsive.
+- Informasi mudah dipahami.
+- Tidak menggunakan angka hasil simulasi sebagai hasil nyata.
+
+### Rekomendasi tampilan
+
+test-net
+
+Internet Speed Test
+
+# Test your internet
+
+Measure your connection speed
+
+# GO
+
+Illustrative UI — not a real measurement
+
+DOWNLOAD
+
+# —
+
+Mbps
+
+UPLOAD
+
+# —
+
+Mbps
+
+PING
+
+# —
+
+ms
+
+JITTER
+
+# —
+
+ms
+
+Server: Primary Test Server · Estimated data usage shown before test
+
+### UI States
+
+| State      | Perilaku              |
+| ---------- | --------------------- |
+| Idle       | Tombol Start          |
+| Preparing  | Persiapan server      |
+| Ping       | Pengukuran latency    |
+| Download   | Pengukuran download   |
+| Upload     | Pengukuran upload     |
+| Completed  | Hasil ditampilkan     |
+| Cancelling | Proses dihentikan     |
+| Cancelled  | Tes dibatalkan        |
+| Error      | Pesan error dan retry |
+
+## 11. Error Handling
+
+| Error              | Penyebab                  | Solusi UI                            |
+| ------------------ | ------------------------- | ------------------------------------ |
+| Server unavailable | Server mati               | Retry                                |
+| Timeout            | Koneksi lambat            | Retry                                |
+| CORS               | Origin tidak diizinkan    | Pesan server configuration error     |
+| Network error      | Koneksi terputus          | Informasi koneksi                    |
+| Upload failed      | Upload gagal              | Retry                                |
+| Invalid config     | Environment salah         | Server configuration error           |
+| TLS error          | Sertifikat tidak valid    | Informasi koneksi aman               |
+| Rate limit         | Request terlalu banyak    | Minta pengguna mencoba kembali nanti |
+| Cancelled          | Pengguna menghentikan tes | Kembali ke idle                      |
+
+## 12. Technical Architecture
+
+### Architecture Layers
+
+| Layer          | Responsibility        | Teknologi                             |
+| -------------- | --------------------- | ------------------------------------- |
+| Presentation   | UI                    | Next.js, React                        |
+| Application    | Test lifecycle        | Custom Hooks                          |
+| Business Logic | Perhitungan metrik    | TypeScript                            |
+| Data Access    | Engine communication  | Engine Adapter                        |
+| Infrastructure | Server dan deployment | VPS, Reverse Proxy, Docker jika perlu |
+
+### Next.js Responsibilities
+
+- UI rendering.
+- Routing.
+- Metadata dan SEO.
+- Public configuration.
+- Halaman informasi.
+
+### Dedicated Backend Responsibilities
+
+- Ping endpoint.
+- Download endpoint.
+- Upload endpoint.
+- Transfer data.
+- Bandwidth management.
+- Concurrency management.
+- Rate limiting.
+
+### Suggested Folder Structure
+
+```
+test-net/
+│
+├── app/
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── globals.css
+│   ├── about/
+│   │   └── page.tsx
+│   ├── faq/
+│   │   └── page.tsx
+│   └── privacy/
+│       └── page.tsx
+│
+├── components/
+│   ├── layout/
+│   │   ├── app-header.tsx
+│   │   └── app-footer.tsx
+│   │
+│   ├── speed-test/
+│   │   ├── speed-test-panel.tsx
+│   │   ├── metric-card.tsx
+│   │   ├── test-progress.tsx
+│   │   ├── test-status.tsx
+│   │   └── data-usage-notice.tsx
+│   │
+│   └── ui/
+│
+├── hooks/
+│   └── use-speed-test.ts
+│
+├── lib/
+│   ├── config.ts
+│   ├── utils.ts
+│   └── speed-test/
+│       ├── types.ts
+│       ├── constants.ts
+│       ├── calculations.ts
+│       ├── service.ts
+│       └── engine-adapter.ts
+│
+├── public/
+│
+├── infra/
+│   └── speedtest-server/
+│
+├── docs/
+│   ├── TECHNICAL_PLAN.md
+│   ├── UI_UX_GUIDE.md
+│   ├── TEST_REPORT.md
+│   ├── DEPLOYMENT_GUIDE.md
+│   └── RELEASE_NOTES.md
+│
+├── .env.example
+├── package.json
+└── PROJECT_PRD_AND_PLAYBOOK.md
+```
+
+Folder structure final ditetapkan di Phase 2. Tidak perlu membuat file kosong.
+
+### State Management
+
+Gunakan React state untuk lifecycle pengujian.
+
+Zustand belum diperlukan karena state utama hanya digunakan di halaman speed test. Tambahkan jika kebutuhan lintas halaman muncul.
+
+### HTTP Client
+
+Gunakan native `fetch` sebagai default. Axios bukan dependency wajib.
+
+## 13. Data Model
+
+Database tidak diperlukan untuk MVP.
+
+### TypeScript Types
+
+```
+export type SpeedTestPhase =
+  | "idle"
+  | "preparing"
+  | "ping"
+  | "download"
+  | "upload"
+  | "completed"
+  | "cancelling"
+  | "cancelled"
+  | "error";
+
+export interface SpeedTestMetrics {
+  downloadMbps: number | null;
+  uploadMbps: number | null;
+  pingMs: number | null;
+  jitterMs: number | null;
+}
+
+export interface SpeedTestResult {
+  id: string;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+  metrics: SpeedTestMetrics;
+  bytesDownloaded: number;
+  bytesUploaded: number;
+  serverId: string;
+  serverName: string;
+}
+
+export interface SpeedTestServerConfig {
+  id: string;
+  name: string;
+  endpoint: string;
+}
+```
+
+### Storage
+
+| Data           | Storage              |
+| -------------- | -------------------- |
+| Server config  | Environment variable |
+| Current result | React state          |
+| History        | Tidak ada pada MVP   |
+| User account   | Tidak ada            |
+| Database       | Tidak ada            |
+
+## 14. Security & Privacy
+
+- HTTPS wajib.
+- CORS hanya untuk origin yang diizinkan.
+- Rate limiting.
+- Batas ukuran payload.
+- Batas durasi tes.
+- Batas concurrency.
+- Tidak menerima arbitrary URL upload.
+- Tidak menyimpan payload.
+- Tidak menyimpan hasil ke server.
+- Tidak memasukkan secret ke environment variable publik.
+- Privacy notice menjelaskan bahwa dedicated test server menerima alamat IP sumber sebagai bagian normal koneksi.
+
+Contoh `.env.example`:
+
+```
+NEXT_PUBLIC_SPEEDTEST_SERVER_URL=https://speed-server.example.com
+NEXT_PUBLIC_SPEEDTEST_SERVER_NAME=Primary Test Server
+```
+
+## 15. Success Criteria
+
+- Download test berjalan.
+- Upload test berjalan.
+- Ping tersedia.
+- Jitter tersedia.
+- Hasil berasal dari pengukuran nyata.
+- Cancellation bekerja sesuai kemampuan engine.
+- Retry bekerja.
+- Estimasi penggunaan data ditampilkan.
+- UI responsive.
+- Dedicated test server berjalan.
+- HTTPS dan CORS benar.
+- Tidak menggunakan mock di production.
+- Testing lulus.
+- Deployment production berhasil.
+
+## 16. Risks & Technical Constraints
+
+| Risiko                    | Mitigasi                         |
+| ------------------------- | -------------------------------- |
+| Bandwidth VPS terbatas    | Benchmark kapasitas server       |
+| Server jauh dari pengguna | Tampilkan lokasi server          |
+| Traffic berlebihan        | Rate limiting                    |
+| Cache memengaruhi hasil   | Cache-busting                    |
+| CORS gagal                | Konfigurasi allowlist            |
+| Browser throttling        | Penanganan tab tidak aktif       |
+| Engine berubah            | Pin versi engine                 |
+| Biaya bandwidth tinggi    | Batas durasi dan payload         |
+| Server overload           | Concurrency limit dan monitoring |
+
+# PART B — SEQUENTIAL DEVELOPMENT PLAYBOOK
+
+Development dibagi menjadi tepat 10 phase. Setiap phase memiliki prompt khusus yang dapat langsung diberikan kepada AI Coding Assistant di VS Code.
+
+## PHASE 1 — Environment & Project Bootstrap
+
+Foundation
+
+### 1. Phase Objective
+
+Menyiapkan development environment dan project Next.js dari awal sampai dapat dijalankan.
+
+### 2. Scope of Work
+
+- Pemeriksaan Node.js dan npm.
+- Setup Next.js App Router.
+- Setup TypeScript.
+- Setup Tailwind CSS.
+- Setup ESLint.
+- Setup shadcn/ui.
+- Setup Git.
+- Setup environment variables.
+- Verifikasi project.
+
+### 3. Detailed Implementation Steps
+
+1. Periksa Node.js, npm, dan Git.
+2. Buat project Next.js.
+3. Gunakan App Router.
+4. Gunakan TypeScript.
+5. Gunakan Tailwind CSS.
+6. Inisialisasi shadcn/ui.
+7. Periksa struktur folder.
+8. Siapkan `.env.example`.
+9. Siapkan `.gitignore`.
+10. Jalankan aplikasi.
+11. Lakukan validasi awal.
+
+### 4. Required Commands
+
+Prasyarat:
+
+```
+node --version
+npm --version
+git --version
+```
+
+Buat project:
+
+```
+npx create-next-app@latest test-net \
+  --typescript \
+  --tailwind \
+  --eslint \
+  --app \
+  --no-src-dir \
+  --use-npm
+
+cd test-net
+```
+
+Inisialisasi shadcn:
+
+```
+npx shadcn@latest init
+```
+
+Jalankan aplikasi:
+
+```
+npm run dev
+```
+
+Validasi:
+
+```
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Git:
+
+```
+git init
+git add .
+git commit -m "phase 1: project bootstrap"
+```
+
+Jika project sudah berada di repository yang memiliki Git, jangan menjalankan `git init` ulang secara otomatis.
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 1 — PROJECT BOOTSTRAP
+
+Kamu bertindak sebagai Senior Fullstack Developer.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Tech stack:
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- npm
+
+Development approach:
+
+- Solo developer
+- MVP first
+- Clean architecture pragmatis
+- Maintainable code
+- Reusable components
+- Hindari over-engineering
+
+## Tugas
+
+1. Periksa kondisi folder dan Git repository sebelum mengubah file.
+2. Setup Next.js App Router menggunakan TypeScript.
+3. Setup Tailwind CSS dan ESLint.
+4. Gunakan struktur tanpa folder src.
+5. Inisialisasi shadcn/ui sesuai versi yang tersedia.
+6. Siapkan .env.example.
+7. Pastikan .env.local masuk .gitignore.
+8. Buat README.md berisi petunjuk instalasi dan menjalankan project.
+9. Verifikasi aplikasi dapat dijalankan.
+
+## File yang diharapkan
+
+- package.json
+- package-lock.json
+- app/layout.tsx
+- app/page.tsx
+- app/globals.css
+- components.json
+- .env.example
+- .gitignore
+- README.md
+
+Sesuaikan dengan hasil scaffold yang sebenarnya.
+
+## Batasan
+
+- Jangan implementasikan speed test.
+- Jangan membuat backend.
+- Jangan membuat database.
+- Jangan menambahkan authentication.
+- Jangan menambahkan dependency yang belum diperlukan.
+- Jangan mengubah tech stack.
+- Jangan menimpa file yang sudah ada tanpa pemeriksaan.
+
+## Acceptance Criteria
+
+- Project dapat dijalankan.
+- TypeScript aktif.
+- Tailwind CSS berfungsi.
+- shadcn/ui terinisialisasi.
+- Environment variables tersedia.
+- Tidak ada secret dalam Git.
+
+## Testing
+
+Jalankan:
+
+npm run lint\
+npx tsc --noEmit\
+npm run build
+
+Laporkan hasil aktual setiap command.
+
+## Final Report
+
+Laporkan:
+
+1. Ringkasan pekerjaan.
+2. File dibuat dan diubah.
+3. Dependency ditambahkan.
+4. Command yang dijalankan.
+5. Hasil testing.
+6. Acceptance checklist.
+7. Git checkpoint.
+
+Jangan melanjutkan ke Phase 2.
+
+### 6. Expected Deliverables
+
+- Next.js project.
+- TypeScript.
+- Tailwind CSS.
+- shadcn/ui.
+- Git repository.
+- `.env.example`.
+- README.
+
+### 7. Acceptance Criteria
+
+- Development server berjalan.
+- TypeScript tidak error.
+- Tailwind berfungsi.
+- shadcn/ui terinisialisasi.
+- Lint berhasil.
+- Build berhasil.
+- Git siap.
+
+### 8. Testing Requirements
+
+```
+npm run dev
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+### 9. Git Checkpoint
+
+```
+git add .
+git commit -m "phase 1: project bootstrap"
+```
+
+## PHASE 2 — Technical Planning & Architecture
+
+Architecture
+
+### 1. Phase Objective
+
+Menganalisis PRD dan menetapkan arsitektur teknis final sebelum implementasi fitur.
+
+Hasil utama adalah `docs/TECHNICAL_PLAN.md`.
+
+### 2. Scope of Work
+
+- Analisis kebutuhan teknis.
+- Validasi LibreSpeed.
+- Pemilihan versi engine.
+- Arsitektur Next.js dan dedicated server.
+- Folder structure final.
+- Data flow.
+- API architecture.
+- Server configuration.
+- CORS.
+- HTTPS.
+- Rate limiting.
+- Bandwidth management.
+- Dependency planning.
+- Technical risk assessment.
+
+### 3. Detailed Implementation Steps
+
+1. Baca PRD.
+2. Periksa kondisi project.
+3. Evaluasi dokumentasi resmi LibreSpeed.
+4. Periksa lisensi dan versi.
+5. Validasi cara integrasi client-side.
+6. Validasi server implementation.
+7. Tentukan metode ping, jitter, download, upload.
+8. Tentukan endpoint dan konfigurasi CORS.
+9. Tentukan strategi cache-busting.
+10. Tentukan batas transfer data.
+11. Tentukan kebutuhan VPS.
+12. Tentukan kebutuhan Docker.
+13. Tentukan folder structure final.
+14. Tentukan dependency.
+15. Buat `TECHNICAL_PLAN.md`.
+
+Catatan: Jangan mengimplementasikan fitur utama pada phase ini.
+
+### 4. Required Commands
+
+```
+git status
+cat package.json
+npm ls --depth=0
+```
+
+Opsional:
+
+```
+docker --version
+docker compose version
+```
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 2 — TECHNICAL PLANNING & ARCHITECTURE
+
+Kamu bertindak sebagai Senior Software Architect dan Technical Lead.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Phase: 2 — Technical Planning & Architecture
+
+## Tugas
+
+Analisis seluruh PRD dan buat:
+
+docs/TECHNICAL_PLAN.md
+
+Dokumen harus menjelaskan arsitektur teknis yang akan digunakan untuk membangun test-net.
+
+## Technical Investigation
+
+Validasi LibreSpeed dari dokumentasi dan repository resminya.
+
+Periksa:
+
+1. Lisensi.
+2. Versi yang tersedia.
+3. Maintenance project.
+4. Client-side integration.
+5. Server implementation.
+6. Ping endpoint.
+7. Download endpoint.
+8. Upload endpoint.
+9. CORS configuration.
+10. Cache behavior.
+11. Cancellation support.
+12. Progress callback.
+13. Deployment requirements.
+
+Jangan mengarang nama package, API, method, atau endpoint.
+
+## Isi TECHNICAL_PLAN.md
+
+1. Architecture Overview.
+2. Technology Decisions.
+3. LibreSpeed Integration.
+4. Version Pinning.
+5. Frontend Architecture.
+6. Backend Architecture.
+7. Infrastructure Architecture.
+8. Folder Structure.
+9. Data Flow.
+10. State Management.
+11. API/Engine Communication.
+12. Measurement Methodology.
+13. CORS and HTTPS.
+14. Cache-busting.
+15. Timeout and Cancellation.
+16. Bandwidth and Concurrency Management.
+17. Rate Limiting.
+18. Environment Variables.
+19. Deployment Architecture.
+20. Dependency List.
+21. Testing Strategy.
+22. Technical Risks.
+
+## Architecture Rules
+
+- Next.js menangani UI dan kebutuhan ringan.
+- Dedicated test server menangani transfer data.
+- Jangan menggunakan Next.js Route Handlers untuk transfer payload speed test.
+- Jangan menggunakan Rust atau Tauri.
+- Jangan menggunakan database untuk MVP.
+- Jangan menggunakan Docker jika tidak diperlukan.
+- Gunakan native fetch jika cukup.
+
+## Output
+
+Hanya hasilkan technical planning dan dokumentasi.
+
+Jangan:
+
+- Mengimplementasikan speed test.
+- Membuat halaman final.
+- Membuat backend.
+- Menambahkan dependency tanpa alasan.
+- Mengubah source code aplikasi.
+
+Jika terdapat keputusan yang belum dapat divalidasi, tandai sebagai OPEN DECISION dan jelaskan eksperimen yang dibutuhkan.
+
+## Acceptance Criteria
+
+- Architecture final jelas.
+- LibreSpeed integration tervalidasi.
+- Dedicated server direncanakan.
+- Data flow terdokumentasi.
+- Folder structure ditentukan.
+- Deployment topology ditentukan.
+- Tidak ada fitur utama yang diimplementasikan.
+
+## Final Report
+
+Laporkan keputusan teknis, sumber yang diverifikasi, file yang dibuat, dan blocker.
+
+Jangan lanjut ke Phase 3.
+
+### 6. Expected Deliverables
+
+- `docs/TECHNICAL_PLAN.md`
+- Architecture diagram.
+- Data flow.
+- Folder structure.
+- Engine integration decision.
+- Deployment plan.
+- Dependency list.
+
+### 7. Acceptance Criteria
+
+- LibreSpeed tervalidasi.
+- Versi engine dipilih dan dicatat.
+- Arsitektur frontend/backend jelas.
+- Dedicated server direncanakan.
+- Data flow tersedia.
+- Metodologi pengukuran ditentukan.
+- Tidak ada fitur utama diimplementasikan.
+
+### 8. Testing Requirements
+
+- Review dokumentasi resmi LibreSpeed.
+- Review arsitektur.
+- Review dependency.
+- Review konsistensi PRD dan technical plan.
+
+### 9. Git Checkpoint
+
+```
+git add docs/TECHNICAL_PLAN.md
+git commit -m "phase 2: technical architecture"
+```
+
+## PHASE 3 — UI/UX Planning & Design System
+
+Design Planning
+
+### 1. Phase Objective
+
+Menentukan desain, layout, komponen, dan design system sebelum implementasi frontend.
+
+Hasil utama adalah `docs/UI_UX_GUIDE.md`.
+
+### 2. Scope of Work
+
+- Design direction.
+- Wireframe.
+- Layout.
+- Typography.
+- Colors.
+- Spacing.
+- Responsive.
+- Components.
+- UI states.
+- Accessibility.
+
+### 3. Detailed Implementation Steps
+
+1. Baca PRD.
+2. Baca technical plan.
+3. Tentukan design direction.
+4. Buat wireframe desktop.
+5. Buat wireframe mobile.
+6. Tentukan hierarchy halaman.
+7. Tentukan typography.
+8. Tentukan color palette.
+9. Tentukan spacing dan radius.
+10. Tentukan metric cards.
+11. Tentukan status dan progress.
+12. Tentukan responsive behavior.
+13. Tentukan accessibility.
+14. Buat UI/UX guide.
+
+### 4. Required Commands
+
+```
+git status
+```
+
+Tidak perlu memasang dependency.
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 3 — UI/UX PLANNING & DESIGN SYSTEM
+
+Kamu bertindak sebagai Senior UI/UX Designer dan Frontend Architect.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+Phase: 3 — UI/UX Planning & Design System
+
+## Tugas
+
+Buat:
+
+docs/UI_UX_GUIDE.md
+
+Dokumen menjadi panduan implementasi UI untuk seluruh frontend.
+
+## Design Requirements
+
+Tentukan:
+
+1. Design direction.
+2. Visual identity.
+3. Desktop wireframe.
+4. Mobile wireframe.
+5. Navbar.
+6. Hero section.
+7. Speed test panel.
+8. Metric cards.
+9. Progress indicator.
+10. Result display.
+11. Server information.
+12. Data usage notice.
+13. Footer.
+
+## Design System
+
+Tentukan:
+
+- Color palette.
+- Typography.
+- Font sizes.
+- Spacing.
+- Border radius.
+- Shadows.
+- Button variants.
+- Card styles.
+- Focus states.
+- Icon usage.
+
+## UI States
+
+Buat desain untuk:
+
+- Idle.
+- Preparing.
+- Ping.
+- Download.
+- Upload.
+- Completed.
+- Cancelling.
+- Cancelled.
+- Error.
+
+## Responsive Requirements
+
+Jelaskan behavior pada:
+
+- Mobile.
+- Tablet.
+- Desktop.
+
+## Accessibility
+
+Pertimbangkan:
+
+- Keyboard navigation.
+- Focus visibility.
+- Color contrast.
+- Screen reader.
+- Reduced motion.
+- Semantic HTML.
+
+## Component Inventory
+
+Tentukan reusable components beserta tanggung jawab dan props konseptualnya.
+
+## Batasan
+
+- Jangan implementasikan UI.
+- Jangan membuat source code.
+- Jangan menambahkan dependency.
+- Jangan membuat fitur di luar MVP.
+- Konsisten dengan TECHNICAL_PLAN.md.
+
+## Acceptance Criteria
+
+- Semua layout terdokumentasi.
+- Design tokens jelas.
+- Desktop dan mobile tersedia.
+- Semua state pengukuran memiliki desain.
+- Developer dapat mulai implementasi tanpa menebak desain.
+
+## Final Report
+
+Laporkan dokumen yang dibuat dan keputusan desain.
+
+Jangan lanjut ke Phase 4.
+
+### 6. Expected Deliverables
+
+- `docs/UI_UX_GUIDE.md`
+- Wireframe.
+- Design tokens.
+- Component inventory.
+- Responsive guide.
+- UI state guide.
+
+### 7. Acceptance Criteria
+
+- Design direction ditentukan.
+- Desktop layout tersedia.
+- Mobile layout tersedia.
+- Typography dan colors ditentukan.
+- Component inventory tersedia.
+- Semua UI states terdokumentasi.
+
+### 8. Testing Requirements
+
+- Review UI/UX guide.
+- Review konsistensi dengan PRD.
+- Review responsive behavior.
+
+### 9. Git Checkpoint
+
+```
+git add docs/UI_UX_GUIDE.md
+git commit -m "phase 3: ui ux planning"
+```
+
+## PHASE 4 — Frontend Foundation & Application Shell
+
+Frontend Foundation
+
+### 1. Phase Objective
+
+Membangun fondasi frontend, layout, navigation, global styles, dan reusable UI components.
+
+Belum mengimplementasikan business logic speed test.
+
+### 2. Scope of Work
+
+- Folder structure.
+- Global layout.
+- Navbar.
+- Footer.
+- Global CSS.
+- Design tokens.
+- Reusable components.
+- Routing.
+- Responsive shell.
+- Metadata.
+
+### 3. Detailed Implementation Steps
+
+1. Baca PRD.
+2. Baca technical plan.
+3. Baca UI/UX guide.
+4. Setup folder structure final.
+5. Implementasikan global layout.
+6. Implementasikan header.
+7. Implementasikan footer.
+8. Implementasikan landing page shell.
+9. Implementasikan design tokens.
+10. Implementasikan reusable components.
+11. Setup metadata.
+12. Verifikasi responsive layout.
+
+### 4. Required Commands
+
+Contoh instalasi komponen shadcn jika dibutuhkan:
+
+```
+npx shadcn@latest add button card
+```
+
+Validasi:
+
+```
+npm run lint
+npx tsc --noEmit
+npm run build
+npm run dev
+```
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 4 — FRONTEND FOUNDATION & APPLICATION SHELL
+
+Kamu bertindak sebagai Senior Frontend Developer.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+Design reference:\
+docs/UI_UX_GUIDE.md
+
+Phase: 4 — Frontend Foundation
+
+## Tugas
+
+Implementasikan fondasi frontend.
+
+### Implementasi
+
+1. Final folder structure.
+2. Root layout.
+3. Global CSS.
+4. Design tokens.
+5. AppHeader.
+6. AppFooter.
+7. Landing page shell.
+8. Reusable UI components.
+9. Basic routing.
+10. Responsive layout.
+11. SEO metadata dasar.
+
+### Expected Components
+
+- AppHeader
+- AppFooter
+- MetricCard
+- ServerInfo
+- DataUsageNotice
+- SpeedTestPanel placeholder
+
+### File yang diharapkan
+
+- app/layout.tsx
+- app/page.tsx
+- app/globals.css
+- components/layout/\*
+- components/speed-test/\*
+- components/ui/\*
+- lib/utils.ts
+
+Sesuaikan dengan struktur final.
+
+### Batasan
+
+- Jangan implementasikan speed test engine.
+- Jangan membuat fake speed test.
+- Jangan membuat backend.
+- Jangan membuat database.
+- Jangan membuat authentication.
+- Jangan menambahkan Zustand tanpa kebutuhan.
+- Jangan menambahkan dependency yang tidak disetujui.
+
+### Acceptance Criteria
+
+- Layout sesuai UI_UX_GUIDE.md.
+- Responsive.
+- Navigation berfungsi.
+- Reusable components tersedia.
+- Tidak ada hasil pengukuran palsu.
+- Build berhasil.
+
+### Testing
+
+npm run lint\
+npx tsc --noEmit\
+npm run build
+
+Lakukan pengecekan manual desktop dan mobile.
+
+### Final Report
+
+Laporkan file, dependency, hasil testing, dan acceptance checklist.
+
+Jangan lanjut ke Phase 5.
+
+### 6. Expected Deliverables
+
+- Frontend foundation.
+- Application shell.
+- Navbar/Footer.
+- Reusable components.
+- Global design system.
+- Responsive layout.
+
+### 7. Acceptance Criteria
+
+- Layout sesuai design guide.
+- Navbar berfungsi.
+- Footer tersedia.
+- Responsive.
+- Komponen reusable.
+- Tidak ada fake measurement.
+- Build berhasil.
+
+### 8. Testing Requirements
+
+```
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Manual responsive testing.
+
+### 9. Git Checkpoint
+
+```
+git add .
+git commit -m "phase 4: frontend foundation"
+```
+
+## PHASE 5 — Core Frontend Feature Development
+
+Core Frontend
+
+### 1. Phase Objective
+
+Membangun seluruh UI utama dan application state untuk speed test.
+
+### 2. Scope of Work
+
+- Speed test panel.
+- Test lifecycle.
+- Metric cards.
+- Progress.
+- Result display.
+- Custom hooks.
+- Service interface.
+- Error handling UI.
+- Cancellation.
+- Retry.
+- Data usage estimate.
+
+### 3. Detailed Implementation Steps
+
+1. Buat domain types.
+2. Buat calculation utilities.
+3. Buat test lifecycle state.
+4. Buat `useSpeedTest`.
+5. Buat service interface.
+6. Buat engine adapter interface.
+7. Implementasikan start/cancel/retry.
+8. Implementasikan progress.
+9. Implementasikan result UI.
+10. Implementasikan error states.
+11. Implementasikan data usage notice.
+12. Buat mock adapter khusus testing bila diperlukan.
+
+Penting: Mock hanya untuk memvalidasi UI dan logic pada development/testing. Tidak boleh menjadi production engine.
+
+### 4. Required Commands
+
+```
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Jalankan unit tests jika test runner sudah tersedia.
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 5 — CORE FRONTEND FEATURE DEVELOPMENT
+
+Kamu bertindak sebagai Senior Frontend Engineer.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+Design reference:\
+docs/UI_UX_GUIDE.md
+
+Phase: 5 — Core Frontend Features
+
+## Tugas
+
+Implementasikan frontend feature utama speed test.
+
+### Implementasi
+
+1. Speed test domain types.
+2. Speed test calculations.
+3. Test lifecycle state.
+4. useSpeedTest custom hook.
+5. Speed test service interface.
+6. Engine adapter interface.
+7. Start test.
+8. Cancel test.
+9. Restart test.
+10. Progress display.
+11. Metric cards.
+12. Result display.
+13. Error states.
+14. Data usage estimate.
+
+### Expected Files
+
+- lib/speed-test/types.ts
+- lib/speed-test/constants.ts
+- lib/speed-test/calculations.ts
+- lib/speed-test/service.ts
+- lib/speed-test/engine-adapter.ts
+- hooks/use-speed-test.ts
+- components/speed-test/\*
+
+### Mock Data Rules
+
+Jika mock diperlukan:
+
+- Pisahkan dari production service.
+- Gunakan hanya untuk development/test.
+- Jangan gunakan angka random sebagai hasil nyata.
+- Jangan mengaktifkan mock secara default pada production.
+- Berikan penamaan yang jelas.
+
+### Batasan
+
+- Jangan mengarang engine API.
+- Jangan mengintegrasikan backend yang belum tersedia.
+- Jangan membuat database.
+- Jangan membuat authentication.
+- Jangan menambahkan dependency tanpa alasan.
+
+### Acceptance Criteria
+
+- Semua state UI tersedia.
+- Start/cancel/retry berjalan.
+- Tidak ada sesi tes paralel.
+- Sesi lama tidak memperbarui UI sesi baru.
+- Unit conversion benar.
+- Mock tidak digunakan pada production.
+
+### Testing
+
+Uji state transition dan calculation.
+
+Jalankan:\
+npm run lint\
+npx tsc --noEmit\
+npm run build
+
+### Final Report
+
+Laporkan file, dependency, hasil testing, dan known issues.
+
+Jangan lanjut ke Phase 6.
+
+### 6. Expected Deliverables
+
+- Speed test UI.
+- Domain types.
+- Custom hook.
+- Calculation utilities.
+- Service interface.
+- Test lifecycle.
+- Mock adapter untuk testing jika diperlukan.
+
+### 7. Acceptance Criteria
+
+- Start berfungsi.
+- Cancel berfungsi pada level application state.
+- Retry berfungsi.
+- Progress UI tersedia.
+- Result UI tersedia.
+- Error handling tersedia.
+- Mock tidak digunakan di production.
+
+### 8. Testing Requirements
+
+- Unit test calculations.
+- Test state transitions.
+- Test start/cancel/retry.
+- Test lifecycle.
+- Lint/typecheck/build.
+
+### 9. Git Checkpoint
+
+```
+git add .
+git commit -m "phase 5: core frontend features"
+```
+
+## PHASE 6 — Backend & Core Business Logic
+
+Speed Test Infrastructure
+
+### 1. Phase Objective
+
+Mengimplementasikan dedicated speed test server menggunakan LibreSpeed sesuai technical plan.
+
+### 2. Scope of Work
+
+- LibreSpeed deployment.
+- Dedicated server.
+- HTTPS.
+- Domain.
+- CORS.
+- Download endpoint.
+- Upload endpoint.
+- Ping endpoint.
+- Cache policy.
+- Rate limiting.
+- Bandwidth controls.
+- Logging.
+
+### 3. Detailed Implementation Steps
+
+1. Baca technical plan.
+2. Periksa engine version.
+3. Siapkan VPS.
+4. Siapkan subdomain.
+5. Deploy LibreSpeed sesuai dokumentasi versi terpilih.
+6. Setup HTTPS.
+7. Setup CORS allowlist.
+8. Setup endpoint pengujian.
+9. Pastikan cache dinonaktifkan untuk payload tes.
+10. Setup payload limits.
+11. Setup duration limits.
+12. Setup concurrency limits.
+13. Setup rate limiting.
+14. Setup logging.
+15. Uji endpoint.
+16. Catat kapasitas server.
+
+### 4. Required Commands
+
+Pemeriksaan koneksi:
+
+```
+curl -I https://speed-server.example.com
+```
+
+Jika Docker dipilih pada Phase 2:
+
+```
+docker compose config
+docker compose up -d
+docker compose ps
+docker compose logs --tail=100
+```
+
+Command deployment LibreSpeed harus mengikuti dokumentasi versi yang benar-benar dipilih.
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 6 — BACKEND & CORE BUSINESS LOGIC
+
+Kamu bertindak sebagai Senior Infrastructure Engineer dan Backend Engineer.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+Phase: 6 — Backend Implementation
+
+## Tugas
+
+Implementasikan dedicated speed test server sesuai technical plan.
+
+### Implementasi
+
+1. Deploy LibreSpeed.
+2. Pin versi engine.
+3. Siapkan VPS/server.
+4. Setup domain.
+5. Setup HTTPS.
+6. Setup CORS.
+7. Setup ping endpoint.
+8. Setup download endpoint.
+9. Setup upload endpoint.
+10. Setup cache policy.
+11. Setup payload limits.
+12. Setup duration limits.
+13. Setup concurrency limits.
+14. Setup rate limiting.
+15. Setup logging.
+16. Verifikasi endpoint dari browser.
+
+### Infrastructure
+
+Gunakan Docker jika telah diputuskan pada technical plan.
+
+Gunakan reverse proxy jika diperlukan untuk:
+
+- TLS.
+- Routing.
+- Rate limiting.
+- Request size limits.
+- Logging.
+
+### Batasan
+
+- Jangan membuat transfer speed test melalui Next.js Route Handlers.
+- Jangan menggunakan serverless API untuk payload besar.
+- Jangan membuat database.
+- Jangan menyimpan payload pengguna.
+- Jangan menambahkan teknologi backend yang tidak dibutuhkan.
+- Jangan commit credential atau private keys.
+
+### Acceptance Criteria
+
+- Dedicated server aktif.
+- HTTPS berjalan.
+- Endpoint valid.
+- CORS benar.
+- Cache tidak merusak pengukuran.
+- Rate limiting aktif.
+- Payload limits aktif.
+- Kapasitas server terdokumentasi.
+
+### Testing
+
+Lakukan:
+
+- Connectivity test.
+- CORS preflight test.
+- Download test.
+- Upload test.
+- Cache header verification.
+- Rate limit verification.
+
+Catat hasil aktual.
+
+### Final Report
+
+Laporkan:
+
+1. Infrastruktur yang digunakan.
+2. Versi LibreSpeed.
+3. Endpoint.
+4. File konfigurasi.
+5. Bandwidth baseline.
+6. Hasil testing.
+7. Risiko operasional.
+
+Jangan lanjut ke Phase 7.
+
+### 6. Expected Deliverables
+
+- Dedicated speed test server.
+- LibreSpeed deployment.
+- HTTPS.
+- CORS.
+- Transfer endpoints.
+- Rate limiting.
+- Deployment documentation.
+- Bandwidth baseline.
+
+### 7. Acceptance Criteria
+
+- Server aktif.
+- Download endpoint valid.
+- Upload endpoint valid.
+- Ping endpoint valid.
+- HTTPS aktif.
+- CORS benar.
+- Cache-busting/no-store benar.
+- Payload limits tersedia.
+- Rate limiting tersedia.
+
+### 8. Testing Requirements
+
+- Connectivity.
+- CORS.
+- Download.
+- Upload.
+- Cache headers.
+- Rate limits.
+- External network test.
+
+### 9. Git Checkpoint
+
+```
+git add infra docs
+git commit -m "phase 6: backend implementation"
+```
+
+Jangan commit credential server.
+
+## PHASE 7 — Frontend & Backend Integration
+
+Integration
+
+### 1. Phase Objective
+
+Menghubungkan frontend dengan dedicated LibreSpeed server agar seluruh pengukuran berjalan secara nyata.
+
+### 2. Scope of Work
+
+- Engine adapter.
+- Real API integration.
+- Download measurement.
+- Upload measurement.
+- Ping measurement.
+- Jitter calculation.
+- Progress callback.
+- Cancellation.
+- Error mapping.
+- Data usage.
+- End-to-end flow.
+
+### 3. Detailed Implementation Steps
+
+1. Baca technical plan.
+2. Baca dokumentasi engine.
+3. Implementasikan adapter.
+4. Hubungkan adapter ke service.
+5. Hubungkan service ke custom hook.
+6. Implementasikan callback progress.
+7. Implementasikan metric mapping.
+8. Implementasikan cancellation.
+9. Implementasikan timeout.
+10. Implementasikan error mapping.
+11. Implementasikan data usage.
+12. Hapus mock dari production path.
+13. Uji seluruh user flow.
+
+### 4. Required Commands
+
+```
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Jalankan test suite yang tersedia.
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 7 — FRONTEND & BACKEND INTEGRATION
+
+Kamu bertindak sebagai Senior Fullstack Integration Engineer.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+Phase: 7 — Integration
+
+## Tugas
+
+Hubungkan frontend dengan dedicated LibreSpeed test server.
+
+### Implementasi
+
+1. Implementasikan engine adapter berdasarkan API yang sudah diverifikasi.
+2. Hubungkan adapter dengan speed test service.
+3. Hubungkan service dengan useSpeedTest.
+4. Integrasikan ping.
+5. Integrasikan jitter.
+6. Integrasikan download.
+7. Integrasikan upload.
+8. Integrasikan progress callback.
+9. Implementasikan cancellation.
+10. Implementasikan timeout.
+11. Implementasikan error mapping.
+12. Tampilkan server information.
+13. Tampilkan penggunaan data.
+14. Hapus mock dari production path.
+
+### Validasi
+
+Pastikan seluruh hasil berasal dari transfer data dan pengukuran aktual.
+
+Jangan membuat angka hasil menggunakan:
+
+- Random number.
+- Timer simulasi.
+- Mock production.
+- Hardcoded metrics.
+
+### Batasan
+
+- Jangan membuat endpoint transfer melalui Next.js.
+- Jangan mengubah engine version tanpa alasan.
+- Jangan menambahkan database.
+- Jangan menambahkan authentication.
+- Jangan menyimpan hasil di server.
+
+### Acceptance Criteria
+
+- Pengujian berjalan dari browser.
+- Ping dan jitter tersedia.
+- Download aktual.
+- Upload aktual.
+- Result display benar.
+- Cancellation berjalan sesuai dukungan engine.
+- Retry berjalan.
+- Error mapping benar.
+- Mock tidak ada di production.
+
+### Testing
+
+Lakukan pengujian:
+
+- Complete test flow.
+- Cancel test.
+- Retry test.
+- Server unavailable.
+- Network failure.
+- CORS failure.
+- Timeout.
+- Mobile browser.
+
+Jalankan lint, typecheck, dan build.
+
+### Final Report
+
+Laporkan seluruh hasil pengujian aktual.
+
+Jangan lanjut ke Phase 8.
+
+### 6. Expected Deliverables
+
+- Real engine adapter.
+- Real speed test integration.
+- Download/upload/ping/jitter.
+- Progress.
+- Cancellation.
+- Error handling.
+- End-to-end user flow.
+
+### 7. Acceptance Criteria
+
+- Pengukuran aktual berhasil.
+- Semua metrik ditampilkan.
+- Progress sesuai tahap.
+- Cancel berjalan.
+- Retry berjalan.
+- Error ditangani.
+- Tidak ada mock production.
+
+### 8. Testing Requirements
+
+- Integration testing.
+- Browser testing.
+- External network testing.
+- Download/upload test.
+- Cancellation testing.
+- Error testing.
+
+### 9. Git Checkpoint
+
+```
+git add .
+git commit -m "phase 7: frontend backend integration"
+```
+
+## PHASE 8 — Additional Features & Product Completion
+
+Product Completion
+
+### 1. Phase Objective
+
+Menyelesaikan fitur pendukung P1 dan memperbaiki pengalaman pengguna.
+
+### 2. Scope of Work
+
+- About page.
+- FAQ.
+- Privacy.
+- SEO.
+- Share result.
+- Local history jika diperlukan.
+- Accessibility.
+- UX improvements.
+
+### 3. Detailed Implementation Steps
+
+1. Review fitur P1.
+2. Pilih fitur yang relevan untuk public MVP.
+3. Implementasikan About.
+4. Implementasikan FAQ.
+5. Implementasikan Privacy Policy.
+6. Lengkapi metadata SEO.
+7. Implementasikan share result jika disetujui.
+8. Implementasikan local history jika memang dibutuhkan.
+9. Perbaiki accessibility.
+10. Review responsive behavior.
+11. Regression testing.
+
+Local history, bila ditambahkan, menggunakan browser storage dan menyediakan opsi hapus. Jangan menyimpan data sensitif.
+
+### 4. Required Commands
+
+```
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 8 — ADDITIONAL FEATURES & PRODUCT COMPLETION
+
+Kamu bertindak sebagai Senior Product-minded Frontend Developer.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+Design reference:\
+docs/UI_UX_GUIDE.md
+
+Phase: 8 — Additional Features
+
+## Tugas
+
+Implementasikan fitur pendukung P1 yang relevan untuk public MVP.
+
+### Fitur
+
+1. About page.
+2. FAQ page.
+3. Privacy Policy.
+4. SEO metadata.
+5. Open Graph.
+6. Accessibility improvements.
+7. Share result jika diperlukan.
+8. Local history jika disetujui.
+
+### Requirements
+
+Pastikan:
+
+- Metodologi pengukuran dijelaskan.
+- Keterbatasan pengukuran dijelaskan.
+- Penggunaan data dijelaskan.
+- Privacy sesuai perilaku aplikasi.
+- Mobile dan desktop tetap nyaman.
+
+### Batasan
+
+- Jangan implementasikan P2.
+- Jangan menambahkan authentication.
+- Jangan membuat database.
+- Jangan membuat payment.
+- Jangan membuat leaderboard.
+- Jangan menambahkan analytics tracking tanpa keputusan baru.
+- Jangan mengubah core engine tanpa kebutuhan.
+
+### Acceptance Criteria
+
+- Halaman pendukung berfungsi.
+- SEO dasar tersedia.
+- Accessibility membaik.
+- Core speed test tidak mengalami regresi.
+- Tidak ada fitur di luar scope.
+
+### Testing
+
+Jalankan:\
+npm run lint\
+npx tsc --noEmit\
+npm run build
+
+Lakukan regression testing.
+
+### Final Report
+
+Laporkan:
+
+- Fitur P1 yang dibuat.
+- Fitur yang ditunda.
+- File berubah.
+- Hasil testing.
+- Known issues.
+
+Jangan lanjut ke Phase 9.
+
+### 6. Expected Deliverables
+
+- About.
+- FAQ.
+- Privacy.
+- SEO.
+- Accessibility improvements.
+- Share/history jika disetujui.
+
+### 7. Acceptance Criteria
+
+- P1 yang dipilih selesai.
+- Tidak ada P2.
+- Privacy sesuai aplikasi.
+- SEO tersedia.
+- Responsive.
+- Core speed test tidak mengalami regresi.
+
+### 8. Testing Requirements
+
+- Route testing.
+- SEO check.
+- Accessibility.
+- Responsive.
+- Regression test.
+- Build verification.
+
+### 9. Git Checkpoint
+
+```
+git add .
+git commit -m "phase 8: additional features"
+```
+
+## PHASE 9 — Testing, Security & Optimization
+
+Quality Assurance
+
+### 1. Phase Objective
+
+Melakukan pemeriksaan kualitas, keamanan, performa, dan kesiapan aplikasi sebelum production.
+
+Hasil utama: `docs/TEST_REPORT.md`.
+
+### 2. Scope of Work
+
+- Functional testing.
+- Unit testing.
+- Integration testing.
+- E2E testing jika relevan.
+- Type checking.
+- Lint.
+- Build.
+- Responsive.
+- Browser compatibility.
+- Security.
+- Performance.
+- Bug fixing.
+
+### 3. Detailed Implementation Steps
+
+1. Buat test matrix.
+2. Test FR-01 sampai FR-12.
+3. Test speed test lifecycle.
+4. Test calculation.
+5. Test engine adapter.
+6. Test download/upload.
+7. Test cancellation.
+8. Test retry.
+9. Test timeout.
+10. Test error handling.
+11. Test CORS.
+12. Test HTTPS.
+13. Test payload limits.
+14. Test rate limiting.
+15. Test responsive.
+16. Test accessibility.
+17. Review dependency.
+18. Review production configuration.
+19. Perbaiki bug.
+20. Buat TEST_REPORT.md.
+
+Jangan menambahkan fitur baru.
+
+### 4. Required Commands
+
+```
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Jika test script tersedia:
+
+```
+npm test
+```
+
+Pemeriksaan dependency opsional:
+
+```
+npm audit
+```
+
+Jangan menjalankan perbaikan dependency secara paksa tanpa memeriksa dampaknya.
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 9 — TESTING, SECURITY & OPTIMIZATION
+
+Kamu bertindak sebagai Senior QA Engineer, Security Reviewer, dan Performance Engineer.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+Phase: 9 — Testing & Optimization
+
+## Tugas
+
+Lakukan pemeriksaan menyeluruh sebelum production.
+
+### Testing
+
+1. Functional testing.
+2. Unit testing.
+3. Integration testing.
+4. E2E testing jika tersedia.
+5. Type checking.
+6. Lint.
+7. Production build.
+8. Responsive testing.
+9. Browser compatibility.
+10. Accessibility testing.
+
+### Security Audit
+
+Periksa:
+
+- HTTPS.
+- CORS.
+- Environment variables.
+- Payload limits.
+- Rate limiting.
+- Concurrency limits.
+- Input validation.
+- Dependency vulnerabilities.
+- Secret exposure.
+- Cache behavior.
+
+### Performance Audit
+
+Periksa:
+
+- Initial page load.
+- Rendering.
+- JavaScript bundle.
+- Unnecessary dependencies.
+- UI responsiveness.
+- Server bandwidth.
+- Server resource usage.
+
+### Bug Fixing
+
+Perbaiki bug yang ditemukan.
+
+Jangan menambahkan fitur baru.
+
+### Documentation
+
+Buat:
+
+docs/TEST_REPORT.md
+
+Isi wajib:
+
+1. Testing environment.
+2. Browser tested.
+3. Test matrix.
+4. PASS/FAIL/BLOCKED/NOT RUN.
+5. Functional test results.
+6. Integration test results.
+7. Security audit.
+8. Performance observations.
+9. Bugs found.
+10. Fixes applied.
+11. Known limitations.
+12. Residual risks.
+13. GO/NO-GO recommendation.
+
+### Batasan
+
+- Jangan mengarang hasil testing.
+- Jangan menandai test yang tidak dijalankan sebagai PASS.
+- Jangan menambah fitur.
+- Jangan melakukan load testing berlebihan pada server publik.
+- Jangan mengubah metodologi tanpa dokumentasi.
+
+### Acceptance Criteria
+
+- Tidak ada blocker P0/P1 yang belum ditangani atau diterima secara eksplisit.
+- Production build berhasil.
+- Security checklist diperiksa.
+- Core flow tervalidasi.
+- TEST_REPORT.md tersedia.
+
+### Final Report
+
+Berikan ringkasan hasil dan keputusan GO/NO-GO.
+
+Jangan lanjut ke Phase 10.
+
+### 6. Expected Deliverables
+
+- Test matrix.
+- Bug fixes.
+- Security review.
+- Performance review.
+- `docs/TEST_REPORT.md`.
+- GO/NO-GO recommendation.
+
+### 7. Acceptance Criteria
+
+- Lint lulus.
+- Typecheck lulus.
+- Build lulus.
+- Core flow diuji.
+- Security diperiksa.
+- Responsive diperiksa.
+- Bug kritis diselesaikan.
+- Test report tersedia.
+
+### 8. Testing Requirements
+
+Jalankan semua test yang tersedia dan catat hasil aktual.
+
+### 9. Git Checkpoint
+
+```
+git add .
+git commit -m "phase 9: testing and optimization"
+```
+
+## PHASE 10 — Production Deployment & Release
+
+Production Release
+
+### 1. Phase Objective
+
+Melakukan deployment aplikasi dan dedicated speed test server ke production.
+
+### 2. Scope of Work
+
+- Production configuration.
+- Domain.
+- DNS.
+- HTTPS.
+- Next.js hosting.
+- VPS.
+- Dedicated speed test server.
+- Reverse proxy jika diperlukan.
+- Docker jika diperlukan.
+- Monitoring.
+- Backup.
+- Rollback.
+- Smoke testing.
+- Release documentation.
+
+### 3. Detailed Implementation Steps
+
+1. Review TEST_REPORT.md.
+2. Pastikan status GO atau seluruh risiko telah disetujui.
+3. Siapkan production hosting Next.js.
+4. Siapkan VPS untuk speed test server.
+5. Siapkan domain dan subdomain.
+6. Konfigurasikan DNS.
+7. Aktifkan HTTPS.
+8. Konfigurasikan environment variables.
+9. Konfigurasikan CORS production.
+10. Deploy Next.js.
+11. Deploy dedicated test server.
+12. Verifikasi endpoint.
+13. Jalankan smoke test.
+14. Setup monitoring.
+15. Setup backup konfigurasi.
+16. Dokumentasikan rollback.
+17. Buat DEPLOYMENT_GUIDE.md.
+18. Buat RELEASE_NOTES.md.
+
+### 4. Required Commands
+
+Build:
+
+```
+npm ci
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Jika menggunakan Docker Compose:
+
+```
+docker compose config
+docker compose pull
+docker compose up -d
+docker compose ps
+docker compose logs --tail=100
+```
+
+Smoke test:
+
+```
+curl -I https://test-net.example.com
+curl -I https://speed-server.example.com
+```
+
+Domain di atas hanya contoh dan harus diganti dengan domain production aktual.
+
+### 5. AI Coding Assistant Prompt
+
+# PHASE 10 — PRODUCTION DEPLOYMENT & RELEASE
+
+Kamu bertindak sebagai Senior DevOps Engineer dan Release Manager.
+
+Project: test-net
+
+Dokumen utama:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+Technical reference:\
+docs/TECHNICAL_PLAN.md
+
+QA reference:\
+docs/TEST_REPORT.md
+
+Phase: 10 — Production Deployment
+
+## Tugas
+
+Deploy test-net ke production.
+
+### Deployment
+
+1. Review TEST_REPORT.md.
+2. Siapkan production environment.
+3. Setup domain dan DNS.
+4. Deploy Next.js.
+5. Deploy dedicated LibreSpeed server.
+6. Setup HTTPS.
+7. Setup CORS.
+8. Setup cache policy.
+9. Setup rate limiting.
+10. Setup payload limits.
+11. Setup monitoring.
+12. Setup backup.
+13. Setup rollback.
+14. Jalankan production smoke test.
+
+### Documentation
+
+Buat:
+
+docs/DEPLOYMENT_GUIDE.md
+
+Isi:
+
+- Architecture.
+- Prerequisites.
+- Domain.
+- DNS.
+- Environment variables.
+- Next.js deployment.
+- Dedicated server deployment.
+- HTTPS.
+- CORS.
+- Reverse proxy jika digunakan.
+- Docker jika digunakan.
+- Monitoring.
+- Backup.
+- Restore.
+- Rollback.
+- Troubleshooting.
+- Smoke test.
+
+Buat:
+
+docs/RELEASE_NOTES.md
+
+Isi:
+
+- Release version.
+- Release date.
+- Features.
+- Architecture summary.
+- Known limitations.
+- Operational notes.
+
+### Batasan
+
+- Jangan memasukkan secret ke Git.
+- Jangan memindahkan speed test engine ke Next.js serverless.
+- Jangan mengaktifkan fitur P2.
+- Jangan menghapus deployment lama sebelum rollback tersedia.
+- Jangan mengklaim deployment berhasil sebelum diverifikasi.
+
+### Acceptance Criteria
+
+- Production application aktif.
+- Dedicated speed test server aktif.
+- HTTPS berjalan.
+- CORS benar.
+- Speed test nyata berhasil.
+- Monitoring tersedia.
+- Rollback terdokumentasi.
+- Deployment guide tersedia.
+- Release notes tersedia.
+
+### Final Report
+
+Laporkan:
+
+1. Production URL.
+2. Server URL.
+3. Deployment architecture.
+4. Environment configuration.
+5. Smoke test result.
+6. Known issues.
+7. Release version.
+8. Git checkpoint.
+
+Jangan menjalankan phase lain secara otomatis.
+
+### 6. Expected Deliverables
+
+- Production website.
+- Dedicated speed test server.
+- HTTPS.
+- Monitoring.
+- Backup.
+- Rollback documentation.
+- `docs/DEPLOYMENT_GUIDE.md`.
+- `docs/RELEASE_NOTES.md`.
+
+### 7. Acceptance Criteria
+
+- Website production aktif.
+- Dedicated server aktif.
+- HTTPS berjalan.
+- Speed test aktual berhasil.
+- CORS benar.
+- Rate limiting aktif.
+- Monitoring tersedia.
+- Backup dan rollback tersedia.
+- Deployment guide selesai.
+- Release notes selesai.
+
+### 8. Testing Requirements
+
+- Production smoke test.
+- Download test.
+- Upload test.
+- Ping test.
+- Jitter test.
+- Cancellation.
+- Retry.
+- CORS.
+- HTTPS.
+- Mobile/desktop.
+
+### 9. Git Checkpoint
+
+```
+git add docs
+git commit -m "phase 10: production deployment"
+
+git tag -a v1.0.0 -m "test-net MVP release"
+```
+
+Tag hanya dibuat setelah release benar-benar disetujui.
+
+# PART C — GLOBAL AI CODING RULES
+
+Aturan ini wajib digunakan pada setiap phase untuk memastikan AI Coding Assistant tidak mengerjakan seluruh project sekaligus.
+
+## 1. Global Context Prompt
+
+Gunakan konteks berikut setiap kali memulai phase.
+
+Kamu bertindak sebagai Senior Fullstack Developer.
+
+PROJECT:\
+test-net
+
+MAIN DOCUMENT:\
+PROJECT_PRD_AND_PLAYBOOK.md
+
+TECHNICAL REFERENCE:\
+docs/TECHNICAL_PLAN.md
+
+DESIGN REFERENCE:\
+docs/UI_UX_GUIDE.md
+
+TECH STACK:
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- React State
+- Zustand jika diperlukan
+- Native Fetch
+- LibreSpeed Dedicated Test Server
+
+DEVELOPMENT APPROACH:
+
+- Solo developer
+- MVP first
+- Pragmatic clean architecture
+- Maintainable code
+- Reusable components
+- Hindari over-engineering
+
+RULES:
+
+1. Baca PRD terlebih dahulu.
+2. Baca technical plan jika tersedia.
+3. Baca UI/UX guide jika tersedia.
+4. Kerjakan hanya phase yang diminta.
+5. Periksa struktur project sebelum mengubah file.
+6. Jangan menimpa pekerjaan sebelumnya tanpa alasan.
+7. Jangan mengubah tech stack tanpa persetujuan.
+8. Jangan menambahkan dependency tanpa kebutuhan.
+9. Jangan membuat fitur di luar scope.
+10. Jangan menggunakan mock sebagai fitur production.
+11. Jangan mengarang hasil testing.
+12. Jalankan testing yang relevan.
+13. Jangan melanjutkan phase otomatis.
+14. Laporkan file yang dibuat dan diubah.
+15. Laporkan dependency yang ditambahkan.
+16. Laporkan hasil testing aktual.
+17. Jangan memasukkan secret ke Git.
+18. Jangan memproses transfer speed test melalui Next.js serverless.
+19. Jangan menyebut HTTP latency sebagai ICMP ping.
+20. Jangan menampilkan hasil simulasi sebagai hasil pengukuran nyata.
+
+Jika terdapat informasi teknis yang belum jelas:
+
+- Periksa dokumentasi resmi.
+- Jangan menebak API.
+- Jangan membuat asumsi yang tidak berdasar.
+- Ajukan pertanyaan jika keputusan memengaruhi arsitektur.
+
+SETELAH PHASE SELESAI:
+
+Berikan laporan dengan format:
+
+1. Phase Status
+2. Work Summary
+3. Files Created
+4. Files Modified
+5. Dependencies Added
+6. Technical Decisions
+7. Commands Executed
+8. Actual Testing Results
+9. Acceptance Criteria Checklist
+10. Known Issues
+11. Git Checkpoint
+12. Confirmation that next phase has not been started.
+
+## 2. Rules for Mock Data
+
+Mock hanya diperbolehkan pada Phase 5 untuk pengembangan dan pengujian frontend.
+
+| Phase      | Penggunaan Mock                           |
+| ---------- | ----------------------------------------- |
+| Phase 1–4  | Tidak diperlukan                          |
+| Phase 5    | Boleh untuk development/testing           |
+| Phase 6    | Tidak diperlukan                          |
+| Phase 7    | Harus menggunakan engine nyata            |
+| Phase 8–10 | Tidak boleh menggantikan fitur production |
+
+## 3. Rules for Dependencies
+
+Sebelum menambahkan package, AI harus menjelaskan:
+
+- Apa kebutuhan package?
+- Mengapa fitur native tidak cukup?
+- Apakah package masih maintained?
+- Apakah kompatibel dengan Next.js?
+- Apakah ada alternatif yang lebih sederhana?
+
+Hindari dependency hanya karena populer.
+
+## 4. Rules for Phase Execution
+
+Workflow wajib setiap phase
+
+1. Read documentation
+2. Inspect existing project
+3. Implement current phase only
+4. Run tests
+5. Review code and changes
+6. Verify acceptance criteria
+7. Git checkpoint
+8. Developer approval
+
+Baru lanjut setelah approval
+
+# PART D — GIT & EXECUTION RULES
+
+## 1. Git Checkpoint
+
+Setiap phase harus memiliki commit tersendiri.
+
+| Phase | Commit Message                          |
+| ----- | --------------------------------------- |
+| 1     | `phase 1: project bootstrap`            |
+| 2     | `phase 2: technical architecture`       |
+| 3     | `phase 3: ui ux planning`               |
+| 4     | `phase 4: frontend foundation`          |
+| 5     | `phase 5: core frontend features`       |
+| 6     | `phase 6: backend implementation`       |
+| 7     | `phase 7: frontend backend integration` |
+| 8     | `phase 8: additional features`          |
+| 9     | `phase 9: testing and optimization`     |
+| 10    | `phase 10: production deployment`       |
+
+## 2. Sebelum Memulai Phase
+
+Jalankan:
+
+```
+git status
+git log --oneline -5
+```
+
+Pastikan pekerjaan sebelumnya sudah tersimpan.
+
+## 3. Setelah Selesai Phase
+
+Jalankan:
+
+```
+git diff --check
+git status
+git diff --stat
+```
+
+Kemudian review perubahan.
+
+## 4. Commit
+
+Contoh Phase 1:
+
+```
+git add .
+git commit -m "phase 1: project bootstrap"
+```
+
+Jangan melakukan commit apabila:
+
+- Testing wajib belum dilakukan.
+- Ada error yang belum ditinjau.
+- Acceptance criteria belum terpenuhi.
+- Ada secret atau credential.
+- Perubahan belum direview.
+
+## 5. Phase Approval
+
+Setiap phase harus mendapatkan persetujuan developer.
+
+AI tidak boleh melanjutkan otomatis ke phase berikutnya meskipun seluruh pekerjaan terlihat selesai.
+
+# PART E — COMMAND CHEAT SHEET
+
+## 1. Development
+
+```
+npm install
+npm run dev
+```
+
+## 2. Build
+
+```
+npm run build
+```
+
+## 3. Lint
+
+```
+npm run lint
+```
+
+## 4. Type Checking
+
+```
+npx tsc --noEmit
+```
+
+## 5. Dependency Management
+
+```
+npm install package-name
+npm uninstall package-name
+npm ls --depth=0
+```
+
+## 6. Git
+
+```
+git status
+git add .
+git commit -m "phase N: description"
+git log --oneline -10
+```
+
+## 7. Production
+
+```
+npm ci
+npm run build
+```
+
+## 8. Docker (Jika Diperlukan)
+
+```
+docker compose config
+docker compose up -d
+docker compose ps
+docker compose logs --tail=100
+```
+
+## 9. Server Connectivity
+
+```
+curl -I https://test-net.example.com
+
+curl -I https://speed-server.example.com
+```
+
+Ganti domain contoh dengan domain yang digunakan.
+
+# PART F — FINAL CHECKLIST & DOCUMENTATION
+
+## 1. Product Readiness
+
+- Semua P0 requirements selesai.
+- Download test berjalan.
+- Upload test berjalan.
+- Ping tersedia.
+- Jitter tersedia.
+- Result display berfungsi.
+- Cancellation berfungsi.
+- Retry berfungsi.
+- Data usage notice tersedia.
+- Error handling tersedia.
+
+## 2. Technical Readiness
+
+- Next.js frontend berjalan.
+- LibreSpeed dedicated server berjalan.
+- Engine version sudah dipin.
+- HTTPS aktif.
+- CORS benar.
+- Cache-busting benar.
+- Rate limiting aktif.
+- Payload limits aktif.
+- Concurrency limits aktif.
+- Tidak ada database yang tidak diperlukan.
+- Tidak ada mock production.
+
+## 3. Code Quality
+
+- TypeScript berhasil.
+- ESLint berhasil.
+- Production build berhasil.
+- Unit testing tersedia sesuai kebutuhan.
+- Integration testing dilakukan.
+- Tidak ada dependency berlebihan.
+- Tidak ada secret dalam repository.
+
+## 4. UI/UX
+
+- Desktop responsive.
+- Mobile responsive.
+- Loading state tersedia.
+- Error state tersedia.
+- Success state tersedia.
+- Accessibility diperiksa.
+- Keyboard navigation berfungsi.
+
+## 5. Production Readiness
+
+- Domain terhubung.
+- DNS benar.
+- HTTPS aktif.
+- Dedicated test server aktif.
+- Monitoring tersedia.
+- Backup konfigurasi tersedia.
+- Rollback tersedia.
+- Production smoke test berhasil.
+
+## 6. Required Documentation
+
+Struktur dokumentasi akhir:
+
+```
+test-net/
+│
+├── PROJECT_PRD_AND_PLAYBOOK.md
+├── README.md
+│
+├── docs/
+│   ├── TECHNICAL_PLAN.md
+│   ├── UI_UX_GUIDE.md
+│   ├── TEST_REPORT.md
+│   ├── DEPLOYMENT_GUIDE.md
+│   └── RELEASE_NOTES.md
+│
+├── app/
+├── components/
+├── hooks/
+├── lib/
+├── public/
+│
+└── package.json
+```
+
+Dokumentasi tambahan dibuat sesuai phase masing-masing. Jangan membuat file kosong hanya untuk memenuhi struktur.
+
+## 7. Final Release Criteria
+
+MVP dinyatakan selesai apabila:
+
+1. Semua P0 feature berfungsi.
+2. Pengukuran berasal dari transfer data aktual.
+3. Dedicated test server berjalan.
+4. UI dan backend terintegrasi.
+5. Tidak ada mock pada production.
+6. Security dan performance telah diperiksa.
+7. Testing report menyatakan GO.
+8. Deployment berhasil.
+9. Production smoke test berhasil.
+10. Dokumentasi deployment tersedia.
+
+# RINGKASAN SEQUENTIAL DEVELOPMENT
+
+Berikut urutan resmi development test-net:
+
+## 10 Development Phases
+
+1. Phase 1 — Environment & Project Bootstrap
+
+   Setup Next.js, TypeScript, Tailwind, shadcn/ui, Git.
+2. Phase 2 — Technical Planning & Architecture
+
+   Validasi LibreSpeed, architecture, folder structure, server planning.
+3. Phase 3 — UI/UX Planning & Design System
+
+   Wireframe, design tokens, responsive design.
+4. Phase 4 — Frontend Foundation & Application Shell
+
+   Layout, navbar, footer, reusable components.
+5. Phase 5 — Core Frontend Feature Development
+
+   Speed test UI, hooks, state, result, progress.
+6. Phase 6 — Backend & Core Business Logic
+
+   LibreSpeed deployment, VPS, HTTPS, CORS, limits.
+7. Phase 7 — Frontend & Backend Integration
+
+   Real speed test engine integration.
+8. Phase 8 — Additional Features & Product Completion
+
+   FAQ, About, Privacy, SEO, UX improvements.
+9. Phase 9 — Testing, Security & Optimization
+
+   QA, security audit, performance, TEST_REPORT.
+10. Phase 10 — Production Deployment & Release
+
+    Production, monitoring, backup, rollback, release.
+
+Final Output
+
+Production MVP
+
+## Rekomendasi urutan pengerjaan
+
+Untuk project ini, ada satu hal penting: Phase 2 harus benar-benar memvalidasi LibreSpeed sebelum kamu menghabiskan waktu membangun integrasi frontend.
+
+Jangan menganggap dedicated server otomatis memiliki bandwidth cukup hanya karena VPS berhasil menjalankan aplikasi. Kapasitas bandwidth, lokasi server, concurrency, dan biaya transfer data merupakan faktor utama dalam produk speed test publik.
+
+Target akhir test-net: website speed test publik dengan pengukuran download, upload, ping, dan jitter secara aktual, menggunakan Next.js sebagai frontend dan dedicated LibreSpeed server sebagai measurement engine.
